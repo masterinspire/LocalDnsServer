@@ -1,0 +1,13 @@
+.idea
+.venv
+.vs
+.vscode
+/build
+/data
+Pipfile.lock
+Thumbs.db
+__pycache__
+bin
+logs
+obj
+temp

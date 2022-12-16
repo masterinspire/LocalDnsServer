@@ -1,0 +1,18 @@
+[packages]
+cryptography = "==38.0.4"
+dnspython = "==2.2.1"
+h2 = "==4.1.0"
+httpx = { extras = ["http2"], version = "==0.23.1" }
+pywin32 = { version = "==305", sys_platform = "== 'win32'" }
+
+[dev-packages]
+pyinstaller = "==5.7.0"
+black = "==22.12.0"
+
+[requires]
+python_version = "3.11"
+
+[scripts]
+build = "python build.py"
+dev = "python -m simple --port 54"
+tests = "python -m unittest discover --start-directory tests --top-level-directory . --pattern test_*.py"
