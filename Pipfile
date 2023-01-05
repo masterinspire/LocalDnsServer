@@ -1,8 +1,8 @@
 [packages]
-cryptography = "==38.0.4"
+cryptography = "==39.0.0"
 dnspython = "==2.2.1"
 h2 = "==4.1.0"
-httpx = { extras = ["http2"], version = "==0.23.1" }
+httpx = { extras = ["http2"], version = "==0.23.3" }
 pywin32 = { version = "==305", sys_platform = "== 'win32'" }
 
 [dev-packages]
