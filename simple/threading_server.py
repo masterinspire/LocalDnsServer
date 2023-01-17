@@ -89,7 +89,7 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
 
         return None
 
-    def _send_response(self, response_message: dns.message.QueryMessage):
+    def _send_response(self, response_message: dns.message.Message):
         response_data = response_message.to_wire()
         if self.server.socket_type == socket.SOCK_STREAM:
             connection = cast(socket.socket, self.request)
@@ -99,16 +99,16 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
             _, connection = cast(tuple[bytes, socket.socket], self.request)
             connection.sendto(response_data, self.client_address)
 
-    def _make_response(self, request_message: dns.message.QueryMessage, rcode: Optional[dns.rcode.Rcode]) -> dns.message.QueryMessage:
+    def _make_response(self, request_message: dns.message.Message, rcode: Optional[dns.rcode.Rcode]) -> dns.message.Message:
         response_message = dns.message.make_response(request_message)
         if rcode is not None:
             response_message.set_rcode(rcode)
 
         return response_message
 
-    def _blocked_names(self, domain: str, request_message: dns.message.QueryMessage) -> Optional[dns.message.QueryMessage]:
+    def _blocked_names(self, domain: str, request_message: dns.message.Message) -> Optional[dns.message.Message]:
         question: dns.rrset.RRset = request_message.question[0]
-        response_message: Optional[dns.message.QueryMessage] = None
+        response_message: Optional[dns.message.Message] = None
         if question.rdtype == dns.rdatatype.ANY:
             response_message = self._make_response(request_message, dns.rcode.REFUSED)
         else:
@@ -118,7 +118,7 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
 
         return response_message
 
-    def _cloaking(self, domain: str, request_message: dns.message.QueryMessage) -> dns.message.QueryMessage:
+    def _cloaking(self, domain: str, request_message: dns.message.Message) -> dns.message.Message:
         question: dns.rrset.RRset = request_message.question[0]
         cloaking_items = self.db.cloaking_rules_ex(domain)
         record_type = CloakingItemRecordType.A if question.rdtype == dns.rdatatype.A else CloakingItemRecordType.AAAA
@@ -130,7 +130,7 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
                 response_message = self._proxy_request(name=domain, request_message=request_message)
             else:
                 self.request_domain_cname = cname.mapped
-                request_message2: Optional[dns.message.QueryMessage] = dns.message.from_text(request_message.to_text())
+                request_message2: Optional[dns.message.Message] = dns.message.from_text(request_message.to_text())
                 question2: dns.rrset.RRset = request_message2.question[0]
                 question2.name = dns.name.from_text(self.request_domain_cname)
                 if (response_message := self._blocked_names(self.request_domain_cname, request_message2)) is None:
@@ -173,7 +173,7 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
             )
         )
 
-    def _blocked_ips(self, response_message: dns.message.QueryMessage) -> None:
+    def _blocked_ips(self, response_message: dns.message.Message) -> None:
         has_removed_any_items = False
         for item in response_message.answer:
             item = cast(dns.rrset.RRset, item)
@@ -256,9 +256,8 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
         # ///////////////////////////////////
         self._send_response(response_message)
 
-    def _dns_query(
-        self, request_message: dns.message.QueryMessage, server_ip: str, preferred_protocol: DnsServerUpstreamProtocol
-    ) -> dns.message.QueryMessage:
+    def _dns_query(self, request_message: dns.message.Message, server_ip: str,
+                   preferred_protocol: DnsServerUpstreamProtocol) -> dns.message.Message:
         if preferred_protocol == DnsServerUpstreamProtocol.UDP:
             response_message = dns.query.udp_with_fallback(request_message, where=server_ip, timeout=2, one_rr_per_rrset=False)
             if isinstance(response_message, tuple):
@@ -274,7 +273,7 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
 
         raise ValueError("!!!!!!!!!!")
 
-    def _dns_query_with_upstream(self, request_message: dns.message.QueryMessage, upstream_name: str) -> Optional[dns.message.QueryMessage]:
+    def _dns_query_with_upstream(self, request_message: dns.message.Message, upstream_name: str) -> Optional[dns.message.Message]:
         upstream = self.config.upstream[upstream_name]
         preferred_protocol = DnsServerUpstreamProtocol.HTTPS if upstream.preferred_protocol is None else upstream.preferred_protocol
         if self.server.address_family == socket.AF_INET:
@@ -287,7 +286,7 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
         for ip in where:
             self.upstream_server_used = f"{preferred_protocol.value}://{ip}"
             upstream_server_error: Optional[str] = None
-            response_message: Optional[dns.message.QueryMessage] = None
+            response_message: Optional[dns.message.Message] = None
 
             try:
                 with Stopwatch() as stopwatch:
@@ -355,8 +354,8 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
 
         return None
 
-    def _proxy_request(self, name: str, request_message: dns.message.QueryMessage) -> dns.message.QueryMessage:
-        response_message: Optional[dns.message.QueryMessage] = None
+    def _proxy_request(self, name: str, request_message: dns.message.Message) -> dns.message.Message:
+        response_message: Optional[dns.message.Message] = None
         if (forwarding_item := self.db.forwarding_rules(name)) is None:
             for w in self.config.default:
                 if (response_message := self._dns_query_with_upstream(request_message, w)) is not None:
