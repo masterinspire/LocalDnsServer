@@ -256,8 +256,9 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
         # ///////////////////////////////////
         self._send_response(response_message)
 
-    def _dns_query(self, request_message: dns.message.Message, server_ip: str,
-                   preferred_protocol: DnsServerUpstreamProtocol) -> dns.message.Message:
+    def _dns_query(
+        self, request_message: dns.message.Message, server_ip: str, preferred_protocol: DnsServerUpstreamProtocol
+    ) -> dns.message.Message:
         if preferred_protocol == DnsServerUpstreamProtocol.UDP:
             response_message = dns.query.udp_with_fallback(request_message, where=server_ip, timeout=2, one_rr_per_rrset=False)
             if isinstance(response_message, tuple):
