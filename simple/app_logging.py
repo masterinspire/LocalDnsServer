@@ -7,6 +7,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Optional
 
+__initialized__ = False
+
 
 class CustomFileHandler(logging.FileHandler):
     def __init__(self, directory: str | PathLike[str]):
@@ -38,6 +40,12 @@ class CustomFileHandler(logging.FileHandler):
 
 
 def setup_logging_config(current_dir_data: Optional[Path] = None, console: Optional[bool] = None):
+    global __initialized__
+    if __initialized__:
+        return
+
+    __initialized__ = True
+
     # noinspection SpellCheckingInspection
     log_config = {
         "version": 1,
