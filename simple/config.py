@@ -103,21 +103,28 @@ def parse_config_from_object(o: dict) -> DnsServerConfig:
 
     # ///////////////////////////////////
     dns_server_rules: dict = o["rules"]
-    dns_server_rules2: list[dict[str, str]] = []
+    dns_server_rules2: list[dict[str, list[str]]] = []
     for w3 in ["allowed_ips", "allowed_names", "blocked_ips", "blocked_names", "cloaking_rules", "forwarding_rules"]:
         value3 = dict()
-        item3: Optional[dict[str, str] | str] = dns_server_rules.get(w3)
+        item3: Optional[str | list[str] | dict[str, str | list[str]]] = dns_server_rules.get(w3)
         if item3 is not None:
             if isinstance(item3, str):
-                value3["default"] = item3
+                value3["default"] = [item3]
+            elif isinstance(item3, list):
+                value3["default"] = [x for x in item3]
             elif isinstance(item3, dict):
                 for key4, value4 in item3.items():
-                    value3[str(key4)] = str(value4)
+                    if isinstance(value4, str):
+                        value3[str(key4)] = [value4]
+                    elif isinstance(value4, list):
+                        value3[str(key4)] = [x for x in value4]
+                    else:
+                        raise ValueError("rules -> {} -> {}: wrong value".format(w3, key4))
             else:
                 raise ValueError("rules -> {}: wrong value".format(w3))
 
         for key5, value5 in value3.items():
-            if not key5 or not value5 or not str(value5).endswith(".txt"):
+            if not key5 or not value5 or not all(str(x).endswith(".txt") for x in value5):
                 raise ValueError("rules -> {} -> {}: {}".format(w3, key5, value5))
 
         dns_server_rules2.append(value3)
@@ -173,15 +180,16 @@ class ConfigFile:
             if config.upstream.get(key) is None:
                 raise ValueError("rules -> forwarding_rules: upstream server {} not found".format(key))
 
-        def read_file1(file1: dict[str, str], parse_func: Callable[[str, str], list]) -> list:
+        def read_file1(file1: dict[str, list[str]], parse_func: Callable[[str, str], list]) -> list:
             result = []
             for key1, value1 in file1.items():
-                p = self.app_args.data_dir.joinpath(value1).resolve()
-                if p.is_file():
-                    text = p.read_text()
-                    result.extend(parse_func(key1, text))
-                else:
-                    logger.warning(f"missing {key1} -> {value1}")
+                for value11 in value1:
+                    p = self.app_args.data_dir.joinpath(value11).resolve()
+                    if p.is_file():
+                        text = p.read_text()
+                        result.extend(parse_func(key1, text))
+                    else:
+                        logger.warning(f"missing {key1} -> {value11}")
 
             return result
 

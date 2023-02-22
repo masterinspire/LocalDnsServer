@@ -87,7 +87,24 @@ server listen to all ipv4 and ipv6 addresses, `0.0.0.0` and `::`.
 
 ### Dns Manipulation
 
-Each value in `rules` can be just plain filename, or an `object` of key-value pairs.
+Each key in `rules` specify the dns rule files, each value can be
+
+* just a plain filename (the key is `defalut`)
+* an `array` of filenames (the key is `defalut`)
+* an `object` of key-value pairs (value can also be just a plain filename or an `array` of filenames)
+
+```json
+{
+    "rules": {
+        "allowed_ips": "allowed-ips.txt",
+        "allowed_names": "allowed-names.txt",
+        "blocked_ips": [ "blocked-ips.txt" ],
+        "blocked_names": { "default": "blocked-names.txt", "temp": "blocked-names-temp.txt" },
+        "cloaking_rules": "cloaking-rules.txt",
+        "forwarding_rules": { "google": [ "forwarding-rules.txt" ] }
+    }
+}
+```
 
 rule syntax use *exact match* or *glob pattern* or *prefix match*.
 

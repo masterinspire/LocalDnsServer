@@ -29,12 +29,12 @@ class DnsServerUpstream:
 
 @dataclass(kw_only=True, frozen=True)
 class DnsServerRulesConfig:
-    allowed_ips: dict[str, str] = field(default_factory=dict)
-    allowed_names: dict[str, str] = field(default_factory=dict)
-    blocked_ips: dict[str, str] = field(default_factory=dict)
-    blocked_names: dict[str, str] = field(default_factory=dict)
-    cloaking_rules: dict[str, str] = field(default_factory=dict)
-    forwarding_rules: dict[str, str] = field(default_factory=dict)
+    allowed_ips: dict[str, list[str]] = field(default_factory=dict)
+    allowed_names: dict[str, list[str]] = field(default_factory=dict)
+    blocked_ips: dict[str, list[str]] = field(default_factory=dict)
+    blocked_names: dict[str, list[str]] = field(default_factory=dict)
+    cloaking_rules: dict[str, list[str]] = field(default_factory=dict)
+    forwarding_rules: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass(kw_only=True, frozen=True)
