@@ -80,9 +80,7 @@ class HandleWindowsServiceCommandLine:
     def __try_handle_error(self, e: Exception, error_type: int) -> bool:
         import pywintypes
 
-        # noinspection PyUnresolvedReferences
         if isinstance(e, pywintypes.error):
-            # noinspection PyUnresolvedReferences
             e = cast(pywintypes.error, e)
             return e.winerror == error_type
 
