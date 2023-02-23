@@ -51,8 +51,7 @@ def setup_logging_config(current_dir_data: Optional[Path] = None, console: Optio
         "version": 1,
         "root": {"handlers": ["console"], "level": "DEBUG"},
         "loggers": {
-            "hpack": {"handlers": ["null"], "propagate": False},
-            "httpx": {"handlers": ["null"], "propagate": False},
+            "urllib3": {"handlers": ["null"], "propagate": False},
         },
         "handlers": {
             "null": {"class": "logging.NullHandler"},

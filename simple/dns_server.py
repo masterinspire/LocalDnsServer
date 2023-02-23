@@ -14,7 +14,7 @@ import dns.rdtypes.IN
 import dns.rdtypes.IN.A
 import dns.rdtypes.IN.AAAA
 import dns.resolver
-import httpx
+import requests
 
 from simple import USER_AGENT
 from simple.app_args import AppArgs
@@ -27,10 +27,10 @@ logger = logging.getLogger(__name__)
 
 @contextmanager
 def __start_threading_dns_server(
-    threading_server_class: Callable[[tuple[str, int], DnsServerConfig, httpx.Client], ThreadingDnsTCPServer | ThreadingDnsUDPServer],
+    threading_server_class: Callable[[tuple[str, int], DnsServerConfig, requests.Session], ThreadingDnsTCPServer | ThreadingDnsUDPServer],
     server_address: tuple[str, int],
     config: DnsServerConfig,
-    doh_client: httpx.Client,
+    doh_client: requests.Session,
 ):
     server = threading_server_class(server_address, config, doh_client)
     server_thread_name = "{}_{}".format(type(server).__name__, server_address)
@@ -91,13 +91,16 @@ def start_server(app_args: AppArgs):
     server_address_ipv4 = ("0.0.0.0", app_args.port)
     server_address_ipv6 = ("::", app_args.port)
     with (
-        httpx.Client(http1=True, http2=True, headers={"User-Agent": USER_AGENT}, timeout=2, trust_env=False) as doh_client,
+        requests.session() as doh_client,
         handle_request_log_queue(),
         __start_threading_dns_server(ThreadingDnsTCPServer, server_address_ipv4, config, doh_client),
         __start_threading_dns_server(ThreadingDnsTCPServer, server_address_ipv6, config, doh_client),
         __start_threading_dns_server(ThreadingDnsUDPServer, server_address_ipv4, config, doh_client),
         __start_threading_dns_server(ThreadingDnsUDPServer, server_address_ipv6, config, doh_client),
     ):
+        doh_client.trust_env = False
+        doh_client.proxies.update({'http': '', 'https': ''})
+        doh_client.headers.update({'User-Agent': USER_AGENT})
         logger.info("Local Dns Server at {} and {} is up and running".format(server_address_ipv4, server_address_ipv6))
         yield
 

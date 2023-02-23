@@ -1,4 +1,3 @@
-import errno
 import logging
 import random
 import socket
@@ -17,7 +16,7 @@ import dns.rdtypes.IN
 import dns.rdtypes.IN.A
 import dns.rdtypes.IN.AAAA
 import dns.resolver
-import httpx
+import requests
 
 from simple.db import TheDbJob
 from simple.models import (
@@ -37,7 +36,7 @@ logger = logging.getLogger(__name__)
 class DnsRequestHandler(socketserver.BaseRequestHandler):
     def __init__(self, request: Any, client_address: Any, server: socketserver.BaseServer):
         self.config = cast(DnsServerConfig, None)
-        self.doh_client = cast(httpx.Client, None)
+        self.doh_client = cast(requests.Session, None)
         self.db = TheDbJob(readonly=True)
         self.request_id: str = str(uuid.uuid4())
         self._request_domain: Optional[str] = None
@@ -284,76 +283,41 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
         else:
             return None
 
-        for ip in where:
-            self.upstream_server_used = f"{preferred_protocol.value}://{ip}"
-            upstream_server_error: Optional[str] = None
-            response_message: Optional[dns.message.Message] = None
+        if len(where) == 0:
+            logger.warning(f"no where for upstream {upstream_name}")
+            return None
 
-            try:
-                with Stopwatch() as stopwatch:
-                    response_message = self._dns_query(request_message, ip, preferred_protocol)
+        ip = where[0] if len(where) == 1 else random.choice(where)
+        self.upstream_server_used = f"{preferred_protocol.value}://{ip}"
+        upstream_server_error: Optional[str] = None
+        response_message: Optional[dns.message.Message] = None
 
-                return response_message
-            except Exception as e:
-                e = e.__context__ if isinstance(e, KeyError) and isinstance(e.__context__, httpx.RemoteProtocolError) else e
-                s = str(e)
-                type_name = type(e).__name__
-                upstream_server_error = f"{type_name}: {s}"
-                domain = "{}{}".format(self.request_domain, "" if self.request_domain_cname is None else f" -> {self.request_domain_cname}")
-                # ConnectionAbortedError        [Errno 10053] Unknown error
-                # ConnectionResetError          [WinError 10054] An existing connection was forcibly closed by the remote host
-                # EOFError
-                # KeyError: 1                   RemoteProtocolError
-                # OSError                       [Errno 10051] Unknown error
-                # OSError                       [Errno 10065] Unknown error
-                # TimeoutError                  timed out
-                # dns.exception.Timeout         The DNS operation timed out.
-                # httpx.ConnectError            [WinError 10051] A socket operation was attempted to an unreachable network
-                # httpx.ConnectError            [WinError 10053] An established connection was aborted by the software in your host machine
-                # httpx.ConnectError            [WinError 10054] An existing connection was forcibly closed by the remote host
-                # httpx.ConnectError            [WinError 10065] A socket operation was attempted to an unreachable host
-                # httpx.ConnectTimeout          _ssl.c:980: The handshake operation timed out
-                # httpx.ConnectTimeout          timed out
-                # httpx.LocalProtocolError      Invalid input StreamInputs.SEND_END_STREAM in state StreamState.HALF_CLOSED_LOCAL
-                # httpx.ReadTimeout             The read operation timed out
-                # httpx.RemoteProtocolError     <ConnectionTerminated error_code:ErrorCodes.PROTOCOL_ERROR
-                # httpx.RemoteProtocolError     Server disconnected
-                # httpx.RemoteProtocolError     Server disconnected without sending a response.
+        try:
+            with Stopwatch() as stopwatch:
+                response_message = self._dns_query(request_message, ip, preferred_protocol)
+        except Exception as e:
+            e1 = e
+            error_list = []
+            while True:
+                if e1 is None:
+                    break
 
-                # httpx.LocalProtocolError      Received pseudo-header in trailer {b':scheme', b':path', b':method', b':authority'}
-                # httpx.ReadError               [SSL: SSLV3_ALERT_BAD_RECORD_MAC] sslv3 alert bad record mac (_ssl.c:2548)
+                error_message1 = str(e1)
+                error_type_name1 = type(e1).__name__
+                error_list.append(f"{error_type_name1}: {error_message1}")
+                e1 = e1.__context__
 
-                match e:
-                    case TimeoutError() | dns.exception.Timeout() | httpx.ConnectTimeout() | httpx.ReadTimeout():
-                        pass
-                    case httpx.ConnectError() if (
-                        s.find("A socket operation was attempted to an unreachable network") != -1
-                        or s.find("A socket operation was attempted to an unreachable host") != -1
-                        or s.find("An existing connection was forcibly closed by the remote host") != -1
-                        or s.find("An established connection was aborted by the software in your host machine") != -1
-                    ):
-                        pass
-                    case httpx.LocalProtocolError() if s.find("StreamState.HALF_CLOSED_LOCAL") != -1:
-                        pass
-                    case httpx.RemoteProtocolError() if s.startswith("Server disconnected") or s.startswith("<ConnectionTerminated"):
-                        # TCP RESET
-                        pass
-                    case OSError() as ee if ee.errno in [errno.ENETUNREACH, errno.EHOSTUNREACH]:
-                        pass
-                    case ConnectionResetError() | EOFError() | ConnectionAbortedError():
-                        pass
-                    case _:
-                        logger.error(f"{domain} -> {preferred_protocol.value}://{ip} {type_name}", exc_info=e)
-            finally:
-                question: dns.rrset.RRset = request_message.question[0]
-                self._insert_request_log(
-                    question_type=dns.rdatatype.RdataType(question.rdtype).name,
-                    response_status=None if response_message is None else dns.rcode.Rcode(response_message.rcode()).name,
-                    ms=stopwatch.elapsed_milliseconds,
-                    error=upstream_server_error,
-                )
+            upstream_server_error = "\n\n".join(error_list).strip()
+        finally:
+            question: dns.rrset.RRset = request_message.question[0]
+            self._insert_request_log(
+                question_type=dns.rdatatype.RdataType(question.rdtype).name,
+                response_status=None if response_message is None else dns.rcode.Rcode(response_message.rcode()).name,
+                ms=stopwatch.elapsed_milliseconds,
+                error=upstream_server_error,
+            )
 
-        return None
+        return response_message
 
     def _proxy_request(self, name: str, request_message: dns.message.Message) -> dns.message.Message:
         response_message: Optional[dns.message.Message] = None
@@ -380,7 +344,7 @@ def _get_address_family_from_host(host: str) -> Optional[socket.AddressFamily]:
 
 
 class ThreadingDnsTCPServer(socketserver.ThreadingTCPServer):
-    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: httpx.Client):
+    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: requests.Session):
         self.daemon_threads = True
         self.config = config
         self.doh_client = doh_client
@@ -391,7 +355,7 @@ class ThreadingDnsTCPServer(socketserver.ThreadingTCPServer):
 
 
 class ThreadingDnsUDPServer(socketserver.ThreadingUDPServer):
-    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: httpx.Client):
+    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: requests.Session):
         self.daemon_threads = True
         self.config = config
         self.doh_client = doh_client
