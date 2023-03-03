@@ -99,8 +99,8 @@ def start_server(app_args: AppArgs):
         __start_threading_dns_server(ThreadingDnsUDPServer, server_address_ipv6, config, doh_client),
     ):
         doh_client.trust_env = False
-        doh_client.proxies.update({'http': '', 'https': ''})
-        doh_client.headers.update({'User-Agent': USER_AGENT})
+        doh_client.proxies.update({"http": "", "https": ""})
+        doh_client.headers.update({"User-Agent": USER_AGENT})
         logger.info("Local Dns Server at {} and {} is up and running".format(server_address_ipv4, server_address_ipv6))
         yield
 

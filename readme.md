@@ -1,6 +1,6 @@
 # Local Dns Server
 
-A simple dns server writing in python.
+A simple dns server writing in python for running in localhost.
 
 Use upstream dns servers, with various Dns protocol (UDP, TCP, DOH, DOT).
 
@@ -24,13 +24,9 @@ pipenv install --dev
 pipenv run dev
 ```
 
-dev port is 54
-
 ```shell
 pipenv run build
 ```
-
-Binary files can be found at `build/dist/platform/LocalDnsServer`.
 
 ## Usage
 

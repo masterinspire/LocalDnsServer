@@ -27,3 +27,6 @@ if __name__ == "__main__":
     spec_file = str(c.joinpath("build.spec"))
     # noinspection SpellCheckingInspection
     PyInstaller.__main__.run([str(spec_file), "-y", "--distpath", dist_path_s, "--workpath", work_path])
+    print("\n===============================")
+    print("\ndist path is {}".format(dist_path_s))
+    print("\n===============================")
