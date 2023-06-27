@@ -21,12 +21,15 @@ if __name__ == "__main__":
     build = c.joinpath("build")
     build.mkdir(exist_ok=True)
     # pyi-grab_version exe_file
-    dist_path = build.joinpath("dist", platform.system().lower())
-    dist_path_s = str(dist_path)
+
+    w = platform.system().lower()
+    dist_path = str(build.joinpath(f"dist-{w}"))
     work_path = str(build.joinpath("temp"))
     spec_file = str(c.joinpath("build.spec"))
+
     # noinspection SpellCheckingInspection
-    PyInstaller.__main__.run([str(spec_file), "-y", "--distpath", dist_path_s, "--workpath", work_path])
+    PyInstaller.__main__.run([str(spec_file), "-y", "--distpath", dist_path, "--workpath", work_path])
+
     print("\n===============================")
-    print("\ndist path is {}".format(dist_path_s))
+    print("\ndist path is {}".format(dist_path))
     print("\n===============================")
