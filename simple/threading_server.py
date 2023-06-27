@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 import socket
@@ -172,8 +173,9 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
             )
         )
 
-    def _blocked_ips(self, response_message: dns.message.Message) -> None:
+    def _blocked_ips(self, response_message: dns.message.Message) -> list[AllowedIpItem | BlockedIpItem]:
         has_removed_any_items = False
+        matched_items: list[AllowedIpItem | BlockedIpItem] = []
         for item in response_message.answer:
             item = cast(dns.rrset.RRset, item)
             if item.rdtype != dns.rdatatype.A and item.rdtype != dns.rdatatype.AAAA:
@@ -186,8 +188,9 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
 
                 if (item2 := self.db.block_ips_ex(client_ip=self.client_ip, ip=str(x.address))) is not None:
                     if isinstance(item2, AllowedIpItem):
-                        pass
+                        matched_items.append(item2)
                     elif isinstance(item2, BlockedIpItem):
+                        matched_items.append(item2)
                         items_to_remove.append(x)
 
             for w in items_to_remove:
@@ -203,6 +206,8 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
                 response_message.authority.clear()
                 response_message.additional.clear()
                 response_message.set_rcode(dns.rcode.REFUSED)
+
+        return matched_items
 
     def handle(self):
         if (data := self._get_request()) is None:
@@ -225,17 +230,14 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
             if isinstance(request_message, dns.message.QueryMessage) and request_message.opcode() == dns.opcode.QUERY:
                 with Stopwatch() as stopwatch:
                     question: dns.rrset.RRset = request_message.question[0]
-                    self.request_domain = str(question.name).rstrip(".")
                     is_a_aaaa_question = question.rdtype == dns.rdatatype.A or question.rdtype == dns.rdatatype.AAAA
+                    self.request_domain = str(question.name).rstrip(".")
                     if (response_message := self._blocked_names(domain=self.request_domain, request_message=request_message)) is None:
                         response_message = (
                             self._cloaking(domain=self.request_domain, request_message=request_message)
                             if is_a_aaaa_question
                             else self._proxy_request(name=self.request_domain, request_message=request_message)
                         )
-
-                    if response_message is not None and is_a_aaaa_question and response_message.rcode() == dns.rcode.NOERROR:
-                        self._blocked_ips(response_message)
 
                 if self.upstream_server_used is None and response_message is not None:
                     self._insert_request_log(
@@ -310,6 +312,15 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
             upstream_server_error = "\n\n".join(error_list).strip()
         finally:
             question: dns.rrset.RRset = request_message.question[0]
+            is_a_aaaa_question = question.rdtype == dns.rdatatype.A or question.rdtype == dns.rdatatype.AAAA
+            if response_message is not None and is_a_aaaa_question and response_message.rcode() == dns.rcode.NOERROR:
+                matched_items = self._blocked_ips(response_message)
+                matched_items1 = [x.ip for x in matched_items if isinstance(x, AllowedIpItem)]
+                matched_items2 = [x.ip for x in matched_items if isinstance(x, BlockedIpItem)]
+                if len(matched_items1) > 0 or len(matched_items2) > 0:
+                    o = {"allowed": matched_items1, "blocked": matched_items2}
+                    upstream_server_error = json.dumps(o, sort_keys=True, ensure_ascii=False)
+
             self._insert_request_log(
                 question_type=dns.rdatatype.RdataType(question.rdtype).name,
                 response_status=None if response_message is None else dns.rcode.Rcode(response_message.rcode()).name,
