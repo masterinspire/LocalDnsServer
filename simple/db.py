@@ -187,7 +187,7 @@ class TheDbJob:
         self.__init_db_dns_server_rules(rules)
         self.__init_db_upgrade()
 
-    def allowed_ips(self, client_ip: str, ip: str) -> AllowedIpItem:
+    def allowed_ips(self, client_ip: str, ip: str) -> Optional[AllowedIpItem]:
         parameters = {"client_ip": client_ip, "ip": ip}
         sql = """
             select * from allowed_ips where (
@@ -206,8 +206,11 @@ class TheDbJob:
         item = item if item is not None else next((x for x in result), None)
         return item
 
-    def allowed_names(self, client_ip: str, name: str) -> AllowedNameItem:
-        parameters = {"client_ip": client_ip, "name": name}
+    def allowed_names(self, client_ip: str, name: str) -> Optional[AllowedNameItem]:
+        if not name:
+            return None
+
+        parameters = {"client_ip": client_ip, "name": name.lower()}
         sql = """
             select * from allowed_names where (
                         "group" in ('default', 'temp') or
@@ -226,7 +229,7 @@ class TheDbJob:
         item = item if item is not None else next((x for x in result), None)
         return item
 
-    def blocked_ips(self, client_ip: str, ip: str) -> BlockedIpItem:
+    def blocked_ips(self, client_ip: str, ip: str) -> Optional[BlockedIpItem]:
         parameters = {"client_ip": client_ip, "ip": ip}
         sql = """
             select * from blocked_ips where (
@@ -245,8 +248,11 @@ class TheDbJob:
         item = item if item is not None else next((x for x in result), None)
         return item
 
-    def blocked_names(self, client_ip: str, name: str) -> BlockedNameItem:
-        parameters = {"client_ip": client_ip, "name": name}
+    def blocked_names(self, client_ip: str, name: str) -> Optional[BlockedNameItem]:
+        if not name:
+            return None
+
+        parameters = {"client_ip": client_ip, "name": name.lower()}
         sql = """
             select * from blocked_names where (
                         "group" in ('default', 'temp') or
@@ -274,7 +280,10 @@ class TheDbJob:
         return result1 if result1 is not None else self.blocked_names(client_ip, name)
 
     def cloaking_rules(self, name: str) -> list[CloakingItem]:
-        parameters = {"name": name}
+        if not name:
+            return []
+
+        parameters = {"name": name.lower()}
         sql = """
             select * from cloaking_rules where
                     ("use_glob" = true and (:name glob "name" or :name glob '*.' || "name")) or
@@ -303,7 +312,10 @@ class TheDbJob:
         return result
 
     def forwarding_rules(self, name: str) -> Optional[ForwardingItem]:
-        parameters = {"name": name}
+        if not name:
+            return None
+
+        parameters = {"name": name.lower()}
         sql = """
             select * from forwarding_rules where
                     ("use_glob" = true and (:name glob "name" or :name glob '*.' || "name")) or
