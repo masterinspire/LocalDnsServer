@@ -17,7 +17,7 @@ import dns.rdtypes.IN
 import dns.rdtypes.IN.A
 import dns.rdtypes.IN.AAAA
 import dns.resolver
-import requests
+import httpx
 
 from simple.db import TheDbJob
 from simple.models import (
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 class DnsRequestHandler(socketserver.BaseRequestHandler):
     def __init__(self, request: Any, client_address: Any, server: socketserver.BaseServer):
         self.config = cast(DnsServerConfig, None)
-        self.doh_client = cast(requests.Session, None)
+        self.doh_client = cast(httpx.Client, None)
         self.db = TheDbJob(readonly=True)
         self.request_id: str = str(uuid.uuid4())
         self._request_domain: Optional[str] = None
@@ -300,13 +300,8 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
         except Exception as e:
             e1 = e
             error_list = []
-            while True:
-                if e1 is None:
-                    break
-
-                error_message1 = str(e1)
-                error_type_name1 = type(e1).__name__
-                error_list.append(f"{error_type_name1}: {error_message1}")
+            while e1 is not None:
+                error_list.append(f"{type(e1).__name__}: {str(e1)}")
                 e1 = e1.__context__
 
             upstream_server_error = "\n\n".join(error_list).strip()
@@ -355,7 +350,7 @@ def _get_address_family_from_host(host: str) -> Optional[socket.AddressFamily]:
 
 
 class ThreadingDnsTCPServer(socketserver.ThreadingTCPServer):
-    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: requests.Session):
+    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: httpx.Client):
         self.daemon_threads = True
         self.config = config
         self.doh_client = doh_client
@@ -366,7 +361,7 @@ class ThreadingDnsTCPServer(socketserver.ThreadingTCPServer):
 
 
 class ThreadingDnsUDPServer(socketserver.ThreadingUDPServer):
-    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: requests.Session):
+    def __init__(self, server_address: tuple[str, int], config: DnsServerConfig, doh_client: httpx.Client):
         self.daemon_threads = True
         self.config = config
         self.doh_client = doh_client
