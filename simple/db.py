@@ -302,14 +302,14 @@ class TheDbJob:
         result = self.cloaking_rules(name=name)
         for w in range(5):
             if (cname := next((x for x in result if x.record_type == CloakingItemRecordType.CNAME), None)) is None:
-                return result
+                break
 
             if len((result2 := self.cloaking_rules(name=cname.mapped))) == 0:
-                return result
-            else:
-                result = result2
+                break
 
-        return result
+            result = result2
+
+        return result[:5]
 
     def forwarding_rules(self, name: str) -> Optional[ForwardingItem]:
         if not name:
