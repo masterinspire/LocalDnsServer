@@ -262,10 +262,7 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
     ) -> dns.message.Message:
         if preferred_protocol == DnsServerUpstreamProtocol.UDP:
             response_message = dns.query.udp_with_fallback(request_message, where=server_ip, timeout=2, one_rr_per_rrset=False)
-            if isinstance(response_message, tuple):
-                response_message = response_message[0]
-
-            return response_message
+            return response_message[0] if isinstance(response_message, tuple) else response_message
         elif preferred_protocol == DnsServerUpstreamProtocol.TCP:
             return dns.query.tcp(request_message, where=server_ip, timeout=2, one_rr_per_rrset=False)
         elif preferred_protocol == DnsServerUpstreamProtocol.HTTPS:

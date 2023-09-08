@@ -21,6 +21,7 @@ def single_instance_locker(app_args: AppArgs):
         import winerror
         import win32event
 
+        # noinspection PyTypeChecker
         lock1 = win32event.CreateMutex(None, True, "{4077E45D-7DA1-479D-A719-E4DC6814C2A5}")
         running = win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS
     else:
