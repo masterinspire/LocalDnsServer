@@ -3,13 +3,13 @@ import sys
 import traceback
 from pathlib import Path
 
+from simple import is_running_in_pyinstaller_bundle
 from simple.models import AppArgs
 
 
 def setup_argparse() -> AppArgs:
     try:
-        __file_resolve = Path(__file__).resolve()
-        current_dir = __file_resolve.parent.parent
+        current_dir = Path(sys.executable).resolve().parent if is_running_in_pyinstaller_bundle else Path(__file__).resolve().parent.parent
         current_dir_data = current_dir.joinpath("data")
     except Exception:
         traceback.print_exc()

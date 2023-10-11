@@ -120,6 +120,7 @@ exe = EXE(
     icon="NONE",
     uac_admin=True,
     uac_uiaccess=True,
+    contents_directory="bin",
 )
 
 coll = COLLECT(
