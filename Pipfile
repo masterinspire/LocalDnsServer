@@ -2,13 +2,13 @@
 certifi = "==2023.11.17"
 cryptography = "==41.0.7"
 dnspython = "==2.4.2"
-httpx = { extras = ["http2"], version = "==0.25.2" }
+httpx = { extras = ["http2"], version = "==0.26" }
 pywin32 = { version = "==306", sys_platform = "== 'win32'" }
 
 [dev-packages]
-black = "==23.11.0"
-pyinstaller = "==6.2.0"
-types-pywin32 = "==306.0.0.6"
+black = "==23.12.0"
+pyinstaller = "==6.3.0"
+types-pywin32 = "==306.0.0.8"
 
 [requires]
 python_version = "3.12"
