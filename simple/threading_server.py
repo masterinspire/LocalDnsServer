@@ -354,6 +354,7 @@ class ThreadingDnsTCPServer(socketserver.ThreadingTCPServer):
         if address_family := _get_address_family_from_host(server_address[0]):
             self.address_family = address_family
 
+        # noinspection PyTypeChecker
         super().__init__(server_address, DnsRequestHandler)
 
 
@@ -365,4 +366,5 @@ class ThreadingDnsUDPServer(socketserver.ThreadingUDPServer):
         if address_family := _get_address_family_from_host(server_address[0]):
             self.address_family = address_family
 
+        # noinspection PyTypeChecker
         super().__init__(server_address, DnsRequestHandler)

@@ -1,6 +1,6 @@
 import sqlite3
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
@@ -56,7 +56,7 @@ class RequestLog:
     server: Optional[str]
     ms: float
     error: Optional[str] = None
-    created: str = field(default_factory=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+    created: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
 
 class CloakingItemRecordType(Enum):

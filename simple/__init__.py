@@ -5,4 +5,4 @@ import sys
 is_running_in_pyinstaller_bundle = getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 is_running_in_windows = platform.system() == "Windows"
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"

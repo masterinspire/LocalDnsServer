@@ -6,8 +6,9 @@ httpx = { extras = ["http2"], version = "==0.26" }
 pywin32 = { version = "==306", sys_platform = "== 'win32'" }
 
 [dev-packages]
-black = "==23.12.0"
+black = "==23.12.1"
 pyinstaller = "==6.3.0"
+types-pyinstaller = "==6.3.0.0"
 types-pywin32 = "==306.0.0.8"
 
 [requires]

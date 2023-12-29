@@ -1,3 +1,5 @@
+#!python
+
 import fnmatch
 import platform
 from pathlib import Path
