@@ -1,5 +1,4 @@
 #!python
-
 import fnmatch
 import platform
 from pathlib import Path
@@ -8,6 +7,7 @@ from typing import Optional
 from PyInstaller.building.api import PYZ, EXE, COLLECT
 from PyInstaller.building.build_main import Analysis
 from PyInstaller.building.datastruct import TOC
+from PyInstaller.utils.hooks import copy_metadata
 
 
 def file_version_info() -> Optional[str]:
@@ -69,26 +69,30 @@ VSVersionInfo(
 
 name = "LocalDnsServer"
 
-block_cipher = None
-
 # https://pyinstaller.org/en/stable/spec-files.html#globals-available-to-the-spec-file
 
 a = Analysis(
     ["simple/__main__.py"],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[
+        metadata
+        for package_name in [
+            "certifi",
+            "cryptography",
+            "dnspython",
+            "h2",
+            "httpx",
+            "pywin32",
+        ]
+        for metadata in copy_metadata(package_name, recursive=True)
+    ],
     hiddenimports=[],
     excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
     noarchive=False,
 )
 
-# noinspection DuplicatedCode
 data_patterns_to_exclude = [
-    r"cryptography-*.dist-info[\/]*",
     r"*[\/]py.typed",
 ]
 data_items_to_remove = []
@@ -100,7 +104,7 @@ for w in a.datas:
 
 a.datas = a.datas - TOC(data_items_to_remove)
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure, a.zipped_data)
 
 exe = EXE(
     pyz,
@@ -121,7 +125,7 @@ exe = EXE(
     version=file_version_info(),
     icon="NONE",
     uac_admin=True,
-    uac_uiaccess=True,
+    uac_uiaccess=False,
     contents_directory="bin",
 )
 
