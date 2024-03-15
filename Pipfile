@@ -1,15 +1,15 @@
 [packages]
 certifi = "==2024.2.2"
-cryptography = "==42.0.4"
+cryptography = "==42.0.5"
 dnspython = "==2.6.1"
 httpx = { extras = ["http2"], version = "==0.27" }
 pywin32 = { version = "==306", sys_platform = "== 'win32'" }
 
 [dev-packages]
 black = "==24.2.0"
-pyinstaller = "==6.4.0"
-types-pyinstaller = "==6.4.0.20240212"
-types-pywin32 = "==306.0.0.20240130"
+pyinstaller = "==6.5.0"
+types-pyinstaller = "==6.5.0.20240311"
+types-pywin32 = "==306.0.0.20240313"
 
 [requires]
 python_version = "3.12"
