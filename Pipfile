@@ -7,8 +7,8 @@ pywin32 = { version = "==306", sys_platform = "== 'win32'" }
 
 [dev-packages]
 black = "==24.8.0"
-pyinstaller = "==6.9.0"
-types-pyinstaller = "==6.9.0.20240710"
+pyinstaller = "==6.10.0"
+types-pyinstaller = "==6.10.0.20240812"
 types-pywin32 = "==306.0.0.20240806"
 
 [requires]
