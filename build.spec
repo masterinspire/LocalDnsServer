@@ -61,7 +61,7 @@ VSVersionInfo(
     """.strip()
     # noinspection PyUnresolvedReferences
     p = Path(workpath).joinpath("file_version_info.txt")
-    with open(p, mode="w") as f:
+    with open(p, mode="w", encoding="utf8") as f:
         f.write(file_version_info_txt)
 
     return str(p) if platform.system() == "Windows" else None
