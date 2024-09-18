@@ -1,6 +1,6 @@
 [packages]
 certifi = "==2024.8.30"
-cryptography = "==43.0.0"
+cryptography = "==43.0.1"
 dnspython = "==2.6.1"
 httpx = { extras = ["http2"], version = "==0.27.2" }
 pywin32 = { version = "==306", sys_platform = "== 'win32'" }
