@@ -288,7 +288,7 @@ class TheDbJob:
             select * from cloaking_rules where
                     ("use_glob" = true and (:name glob "name" or :name glob '*.' || "name")) or
                     ("use_glob" = false and (:name like '%.' || "name" or "name" = '=' || :name or "name" = :name))
-                order by id
+                order by random()
         """
         rows = self.db.execute(sql, parameters).fetchall()
         result = [CloakingItem(**{field.name: field.type(row[field.name]) for field in fields(CloakingItem)}) for row in rows]

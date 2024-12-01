@@ -150,9 +150,6 @@ class DnsRequestHandler(socketserver.BaseRequestHandler):
                         if len(response_message.answer) == 0:
                             response_message.set_rcode(dns.rcode.NXDOMAIN)
         else:
-            if len(records) > 2:
-                random.shuffle(records)
-
             response_message = self._make_response(request_message, dns.rcode.NOERROR)
             response_message.answer.append(dns.rrset.from_rdata_list(question.name, 900, records))
 
