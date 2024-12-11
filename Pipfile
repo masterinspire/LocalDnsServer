@@ -2,7 +2,7 @@
 certifi = "==2024.8.30"
 cryptography = "==44.0.0"
 dnspython = "==2.7.0"
-httpx = { extras = ["http2"], version = "==0.28.0" }
+httpx = { extras = ["http2"], version = "==0.28.1" }
 pywin32 = { version = "==308", sys_platform = "== 'win32'" }
 
 [dev-packages]
